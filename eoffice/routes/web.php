@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,21 @@ Route::middleware('guest')->group(function () {
 
 // Protected routes (authenticated users only)
 Route::middleware('auth')->group(function () {
+            // AJAX: Get papers by program
+            Route::get('/paper/by-program/{program_id}', [\App\Http\Controllers\PaperController::class, 'byProgram'])->name('paper.by-program');
+        // PPT Management Routes
+        Route::prefix('ppt')->name('ppt.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\PptController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\PptController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\PptController::class, 'store'])->name('store');
+            Route::get('/{ppt}/edit', [\App\Http\Controllers\PptController::class, 'edit'])->name('edit');
+            Route::put('/{ppt}', [\App\Http\Controllers\PptController::class, 'update'])->name('update');
+            Route::delete('/{ppt}', [\App\Http\Controllers\PptController::class, 'destroy'])->name('destroy');
+            Route::get('/export-csv', [\App\Http\Controllers\PptController::class, 'exportCsv'])->name('exportCsv');
+        });
+    // ESLM Module file upload
+    Route::get('/eslm/{eslm}/module-upload', [\App\Http\Controllers\EslmController::class, 'moduleUploadForm'])->name('module-upload-form');
+    Route::post('/eslm/{eslm}/module-upload', [\App\Http\Controllers\EslmController::class, 'moduleUpload'])->name('module-upload');
     Route::get('/', [LoginController::class, 'dashboard'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -29,6 +45,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{staff}/delete', [StaffController::class, 'destroy'])->name('delete');
         Route::delete('/{staff}', [StaffController::class, 'confirmDelete'])->name('confirm-delete');
         Route::get('/report', [StaffController::class, 'report'])->name('report');
+        // AJAX: Only faculty
+        Route::get('/faculty-only', [StaffController::class, 'facultyOnly'])->name('faculty-only');
     });
 
     // Program Management Routes
@@ -85,6 +103,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/{video}/delete', [VideoController::class, 'destroy'])->name('delete');
         Route::delete('/{video}', [VideoController::class, 'confirmDelete'])->name('confirm-delete');
     });
+
+        // Eslm Management Routes
+        Route::prefix('eslm')->name('eslm.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\EslmController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\EslmController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\EslmController::class, 'store'])->name('store');
+            Route::get('/{eslm}/edit', [\App\Http\Controllers\EslmController::class, 'edit'])->name('edit');
+            Route::put('/{eslm}', [\App\Http\Controllers\EslmController::class, 'update'])->name('update');
+            Route::get('/{eslm}/delete', [\App\Http\Controllers\EslmController::class, 'destroy'])->name('delete');
+            Route::delete('/{eslm}', [\App\Http\Controllers\EslmController::class, 'destroy'])->name('confirm-delete');
+            Route::get('/report', [\App\Http\Controllers\EslmController::class, 'report'])->name('report');
+            Route::get('/export/csv', [\App\Http\Controllers\EslmController::class, 'exportCsv'])->name('export-csv');
+            Route::post('/import/csv', [\App\Http\Controllers\EslmController::class, 'importCsv'])->name('import-csv');
+        });
 });
 
 // Default redirect

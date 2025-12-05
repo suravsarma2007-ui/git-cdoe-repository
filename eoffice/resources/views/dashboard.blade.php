@@ -14,6 +14,7 @@
                 <p class="text-muted">You are successfully logged in to eOffice.</p>
 
                 <div class="row mt-4">
+                    
                     <div class="col-md-3">
                         <div class="card text-center">
                             <div class="card-body">
@@ -50,9 +51,20 @@
                             </div>
                         </div>
                     </div>
+                    
                 </div>
 
                 <div class="row mt-4">
+                        <div class="col-md-3 mt-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">ESLM Management</h5>
+                                    <p class="card-text">Upload, track, and report ESLM modules</p>
+                                    <a href="{{ route('eslm.index') }}" class="btn btn-sm btn-outline-primary">Go to ESLM</a>
+                                </div>
+                            </div>
+                        </div>
+                        
                     <div class="col-md-3">
                         <div class="card text-center">
                             <div class="card-body">
@@ -62,6 +74,19 @@
                             </div>
                         </div>
                     </div>
+
+
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">PPT Management</h5>
+                                <p class="card-text">Upload, track, and report PPT modules</p>
+                                <a href="{{ route('ppt.index') }}" class="btn btn-sm btn-outline-primary">Go to PPT</a>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </div>
 
                 <div class="mt-4">

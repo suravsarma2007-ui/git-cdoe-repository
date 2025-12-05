@@ -16,6 +16,13 @@ class StaffController extends Controller
         return view('staff.index', compact('staff'));
     }
 
+        // AJAX: Get faculty by program (optional, or just by type)
+        public function facultyOnly()
+        {
+            $faculty = Staff::where('staff_type', 'Faculty')->get(['emp_id', 'name']);
+            return response()->json($faculty);
+        }
+
     /**
      * Show the form for creating a new staff record.
      */

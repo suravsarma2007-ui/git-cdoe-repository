@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 
 class PaperController extends Controller
 {
+    // ...existing code...
     /**
      * Display a listing of papers with search.
      */
@@ -26,6 +27,8 @@ class PaperController extends Controller
                   });
             });
         }
+
+        // (Removed duplicate byProgram method; see correct version at end of class)
 
         $papers = $query->orderBy('created_at', 'desc')->paginate(15);
         return view('paper.index', compact('papers'));
