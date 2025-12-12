@@ -56,6 +56,9 @@
                                 <a class="nav-link" href="{{ route('ppt.index') }}">PPT</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="{{ route('video_schedule.index') }}">Video Schedule</a>
+                            </li>
+                            <li class="nav-item">
                                 <span class="nav-link">Welcome, {{ auth()->user()->name ?? auth()->user()->email }}</span>
                             </li>
                             <li class="nav-item">

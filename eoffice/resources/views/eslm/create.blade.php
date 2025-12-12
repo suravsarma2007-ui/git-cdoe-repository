@@ -20,6 +20,7 @@
             <select id="codes" name="codes" class="form-select" required>
                 <option value="">Select Paper</option>
             </select>
+            <input type="hidden" id="paper_code" name="paper_code">
         </div>
                 <div class="mb-3">
                     <label for="module_no" class="form-label">Module No</label>
@@ -71,7 +72,7 @@ programSelect.addEventListener('change', function() {
         .then(data => {
             paperSelect.innerHTML = '<option value="">Select Paper</option>';
             data.forEach(paper => {
-                paperSelect.innerHTML += `<option value="${paper.codes}">${paper.paper_name}</option>`;
+                paperSelect.innerHTML += `<option value="${paper.id}" data-paper_code="${paper.codes}">${paper.paper_name}</option>`;
             });
         });
 });
@@ -85,6 +86,11 @@ window.addEventListener('DOMContentLoaded', function() {
                 facultySelect.innerHTML += `<option value="${staff.emp_id}">${staff.name}</option>`;
             });
         });
+});
+// Set hidden paper_code when paper changes
+paperSelect.addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    document.getElementById('paper_code').value = selected.getAttribute('data-paper_code');
 });
 // No file upload fields for modules
 </script>

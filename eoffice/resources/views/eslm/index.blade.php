@@ -22,18 +22,18 @@
     </div>
     <form method="GET" class="row g-2 mb-3">
         <div class="col-md-2">
-            <select name="program_id" class="form-select">
+            <select name="program_is" class="form-select">
                 <option value="">All Programs</option>
                 @foreach($programs as $program)
-                    <option value="{{ $program->program_id }}" @if(request('program_id') == $program->program_id) selected @endif>{{ $program->program_name }}</option>
+                    <option value="{{ $program->id }}" @if(request('program_is') == $program->id) selected @endif>{{ $program->program_name }}</option>
                 @endforeach
             </select>
         </div>
         <div class="col-md-2">
-            <select name="paper_code" class="form-select">
+            <select name="paper_id" class="form-select">
                 <option value="">All Papers</option>
                 @foreach($papers as $paper)
-                    <option value="{{ $paper->paper_code }}" @if(request('paper_code') == $paper->paper_code) selected @endif>{{ $paper->paper_name }}</option>
+                    <option value="{{ $paper->id }}" @if(request('paper_id') == $paper->id) selected @endif>{{ $paper->paper_name }}</option>
                 @endforeach
             </select>
         </div>

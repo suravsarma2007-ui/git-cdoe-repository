@@ -8,55 +8,91 @@
         <div class="mb-3">
             <label for="program_select" class="form-label">Program</label>
             <select id="program_select" name="program_id" class="form-select mb-2" required>
-                <option value="">-- Select Program (optional) --</option>
+                <option value="">-- Select Program --</option>
                 @foreach($programs as $prog)
-                    <option value="{{ $prog->id }}" @if($ppt->program_id == $prog->id) selected @endif>{{ $prog->program_name }} ({{ $prog->program_id }})</option>
+                    <option value="{{ $prog->id }}" {{ $ppt->program_id == $prog->id ? 'selected' : '' }}>{{ $prog->program_name }} ({{ $prog->program_id }})</option>
                 @endforeach
             </select>
 
             <label for="paper_id" class="form-label">Paper <span class="text-danger">*</span></label>
-            <select name="paper_id" id="paper_id" class="form-select" required>
+            <select name="paper_id" id="paper_id" class="form-select @error('paper_id') is-invalid @enderror" required>
                 <option value="">-- Select Paper --</option>
+                @foreach($papers as $p)
+                    <option value="{{ $p->id }}" data-program="{{ $p->program->id ?? '' }}" {{ old('paper_id', $ppt->paper_id) == $p->id ? 'selected' : '' }}>
+                        {{ $p->paper_name }} ({{ $p->codes }}) - {{ $p->program->program_name ?? '' }}
+                    </option>
+                @endforeach
             </select>
+            @error('paper_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
-        @push('scripts')
+        @section('scripts')
         <script>
             (function(){
                 const prog = document.getElementById('program_select');
                 const paper = document.getElementById('paper_id');
-                async function loadPapers(programId, selectedPaperId = null) {
-                    paper.innerHTML = '<option value="">-- Select Paper --</option>';
-                    if (!programId) return;
+                const initialSelected = @json($ppt->paper_id);
+                const baseUrl = "{{ url('paper/by-program') }}";
+
+                async function loadPapers(programId){
                     try {
-                        const res = await fetch(`/paper/by-program/${programId}`);
-                        if (!res.ok) return;
+                        const url = programId ? `${baseUrl}/${programId}` : baseUrl;
+                        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                        if(!res.ok) return;
                         const data = await res.json();
+
+                        paper.innerHTML = '<option value="">-- Select Paper --</option>';
                         data.forEach(p => {
                             const opt = document.createElement('option');
                             opt.value = p.id;
-                            opt.textContent = `${p.paper_name} (${p.codes ?? ''}) - ${p.program_name ?? ''}`;
-                            if(selectedPaperId && selectedPaperId == p.id) opt.selected = true;
+                            opt.textContent = `${p.paper_name} (${p.codes})`;
                             paper.appendChild(opt);
                         });
+
+                        // Restore previous selection if present
+                        if(initialSelected) {
+                            paper.value = initialSelected;
+                        }
                     } catch (e) {
                         paper.innerHTML = '<option value="">Error loading papers</option>';
                     }
                 }
+                // Ensure selection is restored after program change
                 prog.addEventListener('change', function(){
                     loadPapers(this.value);
+                    setTimeout(function(){
+                        if(initialSelected) paper.value = initialSelected;
+                    }, 300);
                 });
-                // On page load, filter by selected program and select current paper
+
+                prog.addEventListener('change', function(){ loadPapers(this.value); });
                 document.addEventListener('DOMContentLoaded', function(){
-                    if(prog.value) loadPapers(prog.value, {{ $ppt->paper_id }});
+                    // Ensure program dropdown is set to the correct value
+                    prog.value = @json($ppt->program_id);
+                    loadPapers(prog.value);
                 });
+
+                // Auto-update Total field (No of PPT + Screen Recording)
+                const noOfPpt = document.getElementById('no_of_ppt');
+                const screenRecording = document.getElementById('screen_recording');
+                const total = document.getElementById('total');
+                function updateTotal() {
+                    const n = parseInt(noOfPpt.value) || 0;
+                    const s = parseInt(screenRecording.value) || 0;
+                    total.value = n + s;
+                }
+                noOfPpt.addEventListener('input', updateTotal);
+                screenRecording.addEventListener('input', updateTotal);
+                document.addEventListener('DOMContentLoaded', updateTotal);
             })();
         </script>
-        @endpush
+        @endsection
         <div class="mb-3">
             <label for="emp_id" class="form-label">Faculty Name</label>
             <select id="emp_id" name="emp_id" class="form-select" required>
                 <option value="">Select Faculty</option>
-                <option value="{{ $ppt->emp_id }}" selected>{{ $ppt->staff->name ?? $ppt->emp_id }}</option>
+                @foreach($staff as $s)
+                    <option value="{{ $s->id }}" {{ old('emp_id', $ppt->emp_id) == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->emp_id }})</option>
+                @endforeach
             </select>
         </div>
         <div class="mb-3">
@@ -91,13 +127,6 @@
         <div class="mb-3">
             <label for="date_of_submit" class="form-label">Date Of Submit</label>
             <input type="date" class="form-control" id="date_of_submit" name="date_of_submit" value="{{ $ppt->date_of_submit }}" readonly>
-        </div>
-        <div class="mb-3">
-            <label for="ppt_file_link" class="form-label">Upload PPT File (optional)</label>
-            <input type="file" class="form-control" id="ppt_file_link" name="ppt_file_link" accept=".ppt,.pptx,.pdf">
-            @if($ppt->ppt_file_link)
-                <p>Current file: <a href="{{ asset('storage/' . $ppt->ppt_file_link) }}" target="_blank">View</a></p>
-            @endif
         </div>
         <button type="submit" class="btn btn-primary">Update</button>
         <a href="{{ route('ppt.index') }}" class="btn btn-secondary">Cancel</a>

@@ -7,15 +7,15 @@
             <select name="program_id" class="form-select">
                 <option value="">All Programs</option>
                 @foreach($programs as $program)
-                    <option value="{{ $program->program_id }}" @if(request('program_id') == $program->program_id) selected @endif>{{ $program->program_name }}</option>
+                    <option value="{{ $program->id }}" @if(request('program_id') == $program->id) selected @endif>{{ $program->program_name }}</option>
                 @endforeach
             </select>
         </div>
         <div class="col-md-2">
-            <select name="paper" class="form-select">
+            <select name="paper_id" class="form-select">
                 <option value="">All Papers</option>
                 @foreach($papers as $paper)
-                    <option value="{{ $paper->paper_name }}" @if(request('paper') == $paper->paper_name) selected @endif>{{ $paper->paper_name }}</option>
+                    <option value="{{ $paper->id }}" @if(request('paper_id') == $paper->id) selected @endif>{{ $paper->paper_name }}</option>
                 @endforeach
             </select>
         </div>
@@ -26,7 +26,7 @@
             <select name="emp_id" class="form-select">
                 <option value="">All Faculty</option>
                 @foreach($staff as $s)
-                    <option value="{{ $s->emp_id }}" @if(request('emp_id') == $s->emp_id) selected @endif>{{ $s->name }}</option>
+                    <option value="{{ $s->id }}" @if(request('emp_id') == $s->id) selected @endif>{{ $s->name }} ({{ $s->emp_id }})</option>
                 @endforeach
             </select>
         </div>
@@ -38,21 +38,32 @@
                 <option value="Done and Upload" @if(request('status') == 'Done and Upload') selected @endif>Done and Upload</option>
             </select>
         </div>
+            <div class="col-md-2">
+                <select name="semester" class="form-select">
+                    <option value="">All Semesters</option>
+                    @foreach($papers->pluck('semester')->unique()->sort() as $sem)
+                        @if($sem)
+                            <option value="{{ $sem }}" @if(request('semester') == $sem) selected @endif>Semester {{ $sem }}</option>
+                        @endif
+                    @endforeach
+                </select>
+            </div>
         <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100">Filter</button>
         </div>
     </form>
     <div class="d-flex justify-content-between mb-3">
         <a href="{{ route('ppt.create') }}" class="btn btn-primary">Create PPT</a>
-        <a href="{{ route('ppt.exportCsv', request()->all()) }}" class="btn btn-success">Download CSV</a>
+        <a href="{{ url('ppt/export-csv') . (count(request()->all()) ? '?' . http_build_query(request()->all()) : '') }}" class="btn btn-success">Download CSV</a>
     </div>
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
                 <th>Sl. No</th>
                 <th>Program Name</th>
-                <th>Semester</th>
                 <th>Paper Name</th>
+                <th>Semester</th>
+                <th>Faculty Name</th>
                 <th>Module No</th>
                 <th>Status</th>
                 <th>No of PPT</th>
@@ -69,8 +80,24 @@
             <tr>
                 <td>{{ $ppt->id }}</td>
                 <td>{{ $ppt->program?->program_name }}</td>
-                <td>{{ $ppt->paper()->first()?->semester }}</td>
-                <td>{{ $ppt->paper }}</td>
+                <td>
+                    @if(is_object($ppt->paper))
+                        {{ $ppt->paper->paper_name }}
+                    @elseif(!empty($ppt->paper))
+                        {{ $ppt->paper }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>
+                    {{ \App\Http\Controllers\PptReportHelper::getSemesterByPaperId($ppt->paper_id) }}
+                </td>
+                <td>
+                    @php
+                        $faculty = $staff->firstWhere('id', $ppt->emp_id) ?? $staff->firstWhere('emp_id', $ppt->emp_id);
+                    @endphp
+                    {{ $faculty ? $faculty->name . ' (' . $faculty->emp_id . ')' : $ppt->emp_id }}
+                </td>
                 <td>{{ $ppt->module_no }}</td>
                 <td>{{ $ppt->status }}</td>
                 <td>{{ $ppt->no_of_ppt }}</td>

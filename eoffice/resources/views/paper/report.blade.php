@@ -96,26 +96,18 @@
                             @forelse ($papers as $key => $paper)
                                 <tr>
                                     <td>{{ $key + 1 }}</td>
-                                    <td>
-                                        <span class="badge bg-success">{{ $paper->program->program_name }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">{{ $paper->program->program_id }}</span>
-                                    </td>
-                                    <td><code>{{ $paper->codes }}</code></td>
+                                    <td>{{ $paper->program->program_name }}</td>
+                                    <td>{{ $paper->program->program_id }}</td>
+                                    <td>{{ $paper->codes }}</td>
                                     <td>{{ $paper->paper_name }}</td>
                                     <td>{{ $paper->module ?? '-' }}</td>
-                                    <td>
-                                        <span class="badge bg-warning">Sem {{ $paper->semester }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">Year {{ $paper->years }}</span>
-                                    </td>
+                                    <td>Sem {{ $paper->semester }}</td>
+                                    <td>Year {{ $paper->years }}</td>
                                 </tr>
                             @empty
                                 <tr>
                                     <td colspan="8" class="text-center text-muted py-3">
-                                        <i class="bi bi-inbox"></i> No records found matching your filter criteria
+                                        No records found matching your filter criteria
                                     </td>
                                 </tr>
                             @endforelse
@@ -123,12 +115,12 @@
                     </table>
                 </div>
                 <div class="card-footer">
-                    {{ $papers->links('pagination::bootstrap-5') }}
+                    {{ $papers->links() }}
                 </div>
             </div>
         @else
             <div class="alert alert-info" role="alert">
-                <i class="bi bi-info-circle"></i> No papers found. 
+                No papers found. 
                 <a href="{{ route('paper.create') }}">Create a new paper</a>
             </div>
         @endif

@@ -48,23 +48,31 @@ class EslmController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'program_id' => 'required|exists:programs,program_id',
-            'codes' => 'required|exists:papers,codes',
+            'program_id' => 'required|exists:programs,id',
+            'codes' => 'required|exists:papers,id',
+            'paper_code' => 'required|exists:papers,codes',
             'emp_id' => 'required|exists:staff,emp_id',
             'module_no' => 'required|integer|min:1|max:20',
             'status' => 'nullable|string|max:50',
             'remark' => 'nullable|string',
             'block' => 'nullable|string|max:100',
+            'program_is' => 'nullable|integer|exists:programs,id',
+            'paper_id' => 'nullable|integer|exists:papers,id',
         ]);
         $validated['date_of_submit'] = now()->toDateString();
-        // Map codes to paper_code for DB
-        $validated['paper_code'] = $validated['codes'];
+            // Store the selected program id directly
+            // (no need to resolve program_id string, just use id)
+        $validated['paper_id'] = $request->input('codes');
+        $validated['paper_code'] = $request->input('paper_code');
         unset($validated['codes']);
+        // Store program_is and paper_id (actual ids from tables)
+        $program = \App\Models\Program::find($validated['program_id']);
+        $paper = \App\Models\Paper::where('codes', $validated['paper_code'])->first();
+        $validated['program_is'] = $program ? $program->id : null;
+        $validated['paper_id'] = $paper ? $paper->id : null;
         // Handle file upload
         if ($request->hasFile('file_upload_link')) {
             // Get related info for folder structure
-            $program = Program::where('program_id', $validated['program_id'])->first();
-            $paper = Paper::where('codes', $validated['paper_code'])->first();
             $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
             $semester = $paper ? $paper->semester : 'unknown_semester';
             $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
@@ -97,22 +105,30 @@ class EslmController extends Controller
     public function update(Request $request, Eslm $eslm)
     {
         $validated = $request->validate([
-            'program_id' => 'required|exists:programs,program_id',
-            'codes' => 'required|exists:papers,codes',
+            'program_id' => 'required|exists:programs,id',
+            'codes' => 'required|exists:papers,id',
+            'paper_code' => 'required|exists:papers,codes',
             'emp_id' => 'required|exists:staff,emp_id',
             'module_no' => 'required|integer|min:1|max:20',
             'status' => 'nullable|string|max:50',
             'remark' => 'nullable|string',
             'block' => 'nullable|string|max:100',
+            'program_is' => 'nullable|integer|exists:programs,id',
+            'paper_id' => 'nullable|integer|exists:papers,id',
         ]);
-        // Map codes to paper_code for DB
-        $validated['paper_code'] = $validated['codes'];
+        // Ensure program_id and paper_code are set for DB
+            // Store the selected program id directly
+        $validated['paper_id'] = $request->input('codes');
+        $validated['paper_code'] = $request->input('paper_code');
         unset($validated['codes']);
+        // Store program_is and paper_id (actual ids from tables)
+        $program = \App\Models\Program::find($validated['program_id']);
+        $paper = \App\Models\Paper::where('codes', $validated['paper_code'])->first();
+        $validated['program_is'] = $program ? $program->id : null;
+        $validated['paper_id'] = $paper ? $paper->id : null;
         // Handle file upload
         if ($request->hasFile('file_upload_link')) {
             // Get related info for folder structure
-            $program = Program::where('program_id', $validated['program_id'])->first();
-            $paper = Paper::where('codes', $validated['paper_code'])->first();
             $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
             $semester = $paper ? $paper->semester : 'unknown_semester';
             $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';

@@ -8,6 +8,10 @@ use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PaperController;
 use App\Http\Controllers\PaperAllocationController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\AcademicSessionController;
+use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\VideoRecordingScheduleController;
+use App\Http\Controllers\TargetController;
 
 // Guest routes (unauthenticated users)
 Route::middleware('guest')->group(function () {
@@ -102,6 +106,53 @@ Route::middleware('auth')->group(function () {
         Route::put('/{video}', [VideoController::class, 'update'])->name('update');
         Route::get('/{video}/delete', [VideoController::class, 'destroy'])->name('delete');
         Route::delete('/{video}', [VideoController::class, 'confirmDelete'])->name('confirm-delete');
+    });
+
+    // Academic Session Routes
+    Route::resource('academic_session', AcademicSessionController::class)->names([
+        'index'  => 'academic_session.index',
+        'create' => 'academic_session.create',
+        'store'  => 'academic_session.store',
+        'edit'   => 'academic_session.edit',
+        'update' => 'academic_session.update',
+        'destroy'=> 'academic_session.destroy',
+    ]);
+
+    // Module Routes
+    Route::resource('module', ModuleController::class)->names([
+        'index'  => 'module.index',
+        'create' => 'module.create',
+        'store'  => 'module.store',
+        'edit'   => 'module.edit',
+        'update' => 'module.update',
+        'destroy'=> 'module.destroy',
+    ]);
+
+    // Video Recording Schedule Routes
+    Route::prefix('video-schedule')->name('video_schedule.')->group(function () {
+        Route::get('/', [VideoRecordingScheduleController::class, 'index'])->name('index');
+        Route::get('/create', [VideoRecordingScheduleController::class, 'create'])->name('create');
+        Route::post('/', [VideoRecordingScheduleController::class, 'store'])->name('store');
+        Route::get('/{video_schedule}/edit', [VideoRecordingScheduleController::class, 'edit'])->name('edit');
+        Route::put('/{video_schedule}', [VideoRecordingScheduleController::class, 'update'])->name('update');
+        Route::delete('/{video_schedule}', [VideoRecordingScheduleController::class, 'destroy'])->name('destroy');
+        Route::get('/export-csv', [VideoRecordingScheduleController::class, 'exportCsv'])->name('exportCsv');
+        Route::get('/papers-by-program', [VideoRecordingScheduleController::class, 'papersByProgram'])->name('papersByProgram');
+    });
+
+    // Target Routes
+    Route::prefix('target')->name('target.')->group(function () {
+        Route::get('/', [TargetController::class, 'index'])->name('index');
+        Route::get('/create', [TargetController::class, 'create'])->name('create');
+        Route::post('/', [TargetController::class, 'store'])->name('store');
+        Route::get('/{target}/edit', [TargetController::class, 'edit'])->name('edit');
+        Route::put('/{target}', [TargetController::class, 'update'])->name('update');
+        Route::delete('/{target}', [TargetController::class, 'destroy'])->name('destroy');
+        Route::get('/export-csv', [TargetController::class, 'exportCsv'])->name('exportCsv');
+        Route::get('/papers-by-program', [TargetController::class, 'papersByProgram'])->name('papersByProgram');
+        Route::get('/final-report', [TargetController::class, 'finalReport'])->name('finalReport');
+        Route::get('/final-report/export-csv', [TargetController::class, 'finalReportCsv'])->name('finalReportCsv');
+        Route::post('/final-report/{slno}/update', [TargetController::class, 'updateRemarkStatus'])->name('finalReport.update');
     });
 
         // Eslm Management Routes

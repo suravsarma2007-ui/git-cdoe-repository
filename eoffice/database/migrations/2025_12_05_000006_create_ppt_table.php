@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('ppt', function (Blueprint $table) {
             $table->id(); // Sl. No
-            $table->string('paper', 100);
             $table->string('emp_id', 50);
             $table->string('program_id', 50);
+            $table->unsignedBigInteger('paper_id')->nullable();
             $table->unsignedTinyInteger('module_no');
             $table->string('status', 50)->nullable();
             $table->unsignedInteger('no_of_ppt')->nullable();

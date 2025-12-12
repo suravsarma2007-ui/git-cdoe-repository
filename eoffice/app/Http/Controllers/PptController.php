@@ -18,8 +18,8 @@ class PptController extends Controller
         if ($request->filled('program_id')) {
             $query->where('program_id', $request->program_id);
         }
-        if ($request->filled('paper')) {
-            $query->where('paper', $request->paper);
+        if ($request->filled('paper_id')) {
+            $query->where('paper_id', $request->paper_id);
         }
         if ($request->filled('module_no')) {
             $query->where('module_no', $request->module_no);
@@ -29,6 +29,11 @@ class PptController extends Controller
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+        if ($request->filled('semester')) {
+            $query->whereHas('paper', function($subQ) use ($request) {
+                $subQ->where('semester', $request->semester);
+            });
         }
         $ppts = $query->paginate(15);
         $programs = Program::all();
@@ -48,9 +53,9 @@ class PptController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'program_id' => 'required|exists:programs,program_id',
-            'paper' => 'required|exists:papers,paper_name',
-            'emp_id' => 'required|exists:staff,emp_id',
+            'program_id' => 'required|exists:programs,id',
+            'paper_id' => 'required|exists:papers,id',
+            'emp_id' => 'required|exists:staff,id',
             'module_no' => 'required|integer|min:1|max:20',
             'status' => 'nullable|string|max:50',
             'no_of_ppt' => 'nullable|integer',
@@ -58,11 +63,25 @@ class PptController extends Controller
             'remarks' => 'nullable|string',
             'total' => 'nullable|integer',
         ]);
+
+        // Prevent duplicate entry for same paper_id, module_no, emp_id, and same month/year
+        $date = $validated['date_of_submit'] ?? now()->toDateString();
+        $month = date('m', strtotime($date));
+        $year = date('Y', strtotime($date));
+        $exists = \App\Models\Ppt::where('paper_id', $validated['paper_id'])
+            ->where('module_no', $validated['module_no'])
+            ->where('emp_id', $validated['emp_id'])
+            ->whereMonth('date_of_submit', $month)
+            ->whereYear('date_of_submit', $year)
+            ->exists();
+        if ($exists) {
+            return back()->withErrors(['paper_id' => 'A record for this Paper, Module No, Faculty, and Month/Year already exists.'])->withInput();
+        }
         $validated['date_of_submit'] = now()->toDateString();
         // Handle file upload
         if ($request->hasFile('ppt_file_link')) {
-            $program = Program::where('program_id', $validated['program_id'])->first();
-            $paper = Paper::where('paper_name', $validated['paper'])->first();
+            $program = Program::find($validated['program_id']);
+            $paper = Paper::find($validated['paper_id']);
             $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
             $semester = $paper ? $paper->semester : 'unknown_semester';
             $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
@@ -80,6 +99,7 @@ class PptController extends Controller
             $fileName = $paperName . '.' . $ext;
             $validated['ppt_file_link'] = $request->file('ppt_file_link')->storeAs($folder, $fileName, 'public');
         }
+        // Remove setting 'paper' field, store only paper_id
         Ppt::create($validated);
         return redirect()->route('ppt.index')->with('success', 'Record added successfully.');
     }
@@ -95,9 +115,9 @@ class PptController extends Controller
     public function update(Request $request, Ppt $ppt)
     {
         $validated = $request->validate([
-            'program_id' => 'required|exists:programs,program_id',
-            'paper' => 'required|exists:papers,paper_name',
-            'emp_id' => 'required|exists:staff,emp_id',
+            'program_id' => 'required|exists:programs,id',
+            'paper_id' => 'required|exists:papers,id',
+            'emp_id' => 'required|exists:staff,id',
             'module_no' => 'required|integer|min:1|max:20',
             'status' => 'nullable|string|max:50',
             'no_of_ppt' => 'nullable|integer',
@@ -105,10 +125,25 @@ class PptController extends Controller
             'remarks' => 'nullable|string',
             'total' => 'nullable|integer',
         ]);
+
+        // Prevent duplicate entry for same paper_id, module_no, emp_id, and same month/year (excluding current record)
+        $date = $validated['date_of_submit'] ?? now()->toDateString();
+        $month = date('m', strtotime($date));
+        $year = date('Y', strtotime($date));
+        $exists = \App\Models\Ppt::where('paper_id', $validated['paper_id'])
+            ->where('module_no', $validated['module_no'])
+            ->where('emp_id', $validated['emp_id'])
+            ->whereMonth('date_of_submit', $month)
+            ->whereYear('date_of_submit', $year)
+            ->where('id', '!=', $ppt->id)
+            ->exists();
+        if ($exists) {
+            return back()->withErrors(['paper_id' => 'A record for this Paper, Module No, Faculty, and Month/Year already exists.'])->withInput();
+        }
         // Handle file upload
         if ($request->hasFile('ppt_file_link')) {
-            $program = Program::where('program_id', $validated['program_id'])->first();
-            $paper = Paper::where('paper_name', $validated['paper'])->first();
+            $program = Program::find($validated['program_id']);
+            $paper = Paper::find($validated['paper_id']);
             $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
             $semester = $paper ? $paper->semester : 'unknown_semester';
             $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
@@ -160,16 +195,27 @@ class PptController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=$filename",
         ];
-        $columns = ['SlNo', 'Program Name', 'Semester', 'Paper Name', 'Module No', 'Status', 'No of PPT', 'Screen Recording', 'Remarks', 'Total', 'DateOfSubmit', 'ppt_file_link'];
-        $callback = function() use ($ppts, $columns) {
+        $columns = ['SlNo', 'Program Name', 'Semester', 'Paper Name', 'Faculty Name', 'Module No', 'Status', 'No of PPT', 'Screen Recording', 'Remarks', 'Total', 'DateOfSubmit', 'ppt_file_link'];
+        $staffList = \App\Models\Staff::all();
+        $callback = function() use ($ppts, $columns, $staffList) {
+            // Clear output buffer to prevent corrupt CSV download
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             foreach ($ppts as $row) {
+                // Find faculty name by emp_id
+                $faculty = $staffList->firstWhere('id', $row->emp_id) ?? $staffList->firstWhere('emp_id', $row->emp_id);
+                $facultyName = $faculty ? $faculty->name . ' (' . $faculty->emp_id . ')' : $row->emp_id;
+                $paperName = $row->paper?->paper_name ?? $row->paper;
+                $semester = $row->paper?->semester ?? '';
                 fputcsv($file, [
                     $row->id,
                     $row->program?->program_name,
-                    $row->paper?->semester,
-                    $row->paper,
+                    $semester,
+                    $paperName,
+                    $facultyName,
                     $row->module_no,
                     $row->status,
                     $row->no_of_ppt,

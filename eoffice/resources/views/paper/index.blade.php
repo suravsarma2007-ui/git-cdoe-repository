@@ -94,12 +94,31 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
-            @if ($papers->hasPages())
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $papers->links() }}
+            <!-- Customized Simple Pagination -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+                <div class="mb-2 mb-md-0 text-muted small">
+                    Showing {{ $papers->firstItem() ?? 0 }} to {{ $papers->lastItem() ?? 0 }} of {{ $papers->total() }} records
                 </div>
-            @endif
+                <div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            {{-- Previous Page Link --}}
+                            @if ($papers->onFirstPage())
+                                <li class="page-item disabled"><span class="page-link">&laquo; Previous</span></li>
+                            @else
+                                <li class="page-item"><a class="page-link" href="{{ $papers->previousPageUrl() }}" rel="prev">&laquo; Previous</a></li>
+                            @endif
+
+                            {{-- Next Page Link --}}
+                            @if ($papers->hasMorePages())
+                                <li class="page-item"><a class="page-link" href="{{ $papers->nextPageUrl() }}" rel="next">Next &raquo;</a></li>
+                            @else
+                                <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
+            </div>
         @else
             <div class="alert alert-info text-center py-5">
                 <h5>No Papers Yet</h5>

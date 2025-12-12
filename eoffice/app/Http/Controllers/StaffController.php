@@ -10,9 +10,29 @@ class StaffController extends Controller
     /**
      * Display a listing of staff records.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $staff = Staff::orderBy('created_at', 'desc')->paginate(15);
+        $query = Staff::query();
+
+        // Filter by name or emp_id
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('emp_id', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Filter by designation
+        if ($request->filled('designation')) {
+            $query->where('designation', 'like', '%' . $request->designation . '%');
+        }
+
+        // Filter by staff type
+        if ($request->filled('staff_type')) {
+            $query->where('staff_type', $request->staff_type);
+        }
+
+        $staff = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
         return view('staff.index', compact('staff'));
     }
 
@@ -129,10 +149,16 @@ class StaffController extends Controller
             });
         }
 
-        $staff = $query->orderBy('emp_id')->get();
+        $staff = $query->orderBy('emp_id')->paginate(15)->withQueryString();
         $staffTypes = Staff::distinct()->pluck('staff_type');
         $disciplines = Staff::distinct()->pluck('discipline')->filter();
 
-        return view('staff.report', compact('staff', 'staffTypes', 'disciplines'));
+        // Get total counts from the whole staff table
+        $totalStaffCount = Staff::count();
+        $facultyCount = Staff::where('staff_type', 'Faculty')->count();
+        $nonTeachingCount = Staff::where('staff_type', 'Non-Teaching')->count();
+        $supportCount = Staff::where('staff_type', 'Support')->count();
+
+        return view('staff.report', compact('staff', 'staffTypes', 'disciplines', 'totalStaffCount', 'facultyCount', 'nonTeachingCount', 'supportCount'));
     }
 }

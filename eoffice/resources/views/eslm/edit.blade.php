@@ -20,7 +20,7 @@
             <label for="codes" class="form-label">Paper Name</label>
             <select id="codes" name="codes" class="form-select" required>
                 <option value="">Select Paper</option>
-                <option value="{{ $eslm->codes }}" selected>{{ $eslm->paper->paper_name ?? $eslm->codes }}</option>
+                <option value="{{ $eslm->paper_code }}" selected>{{ $eslm->paper->paper_name ?? $eslm->paper_code }}</option>
             </select>
         </div>
         <div class="mb-3">
@@ -65,7 +65,7 @@
 <script>
 // Dynamic Paper and Faculty dropdowns
 const programSelect = document.getElementById('program_db_id');
-const paperSelect = document.getElementById('paper_code');
+const paperSelect = document.getElementById('codes');
 const facultySelect = document.getElementById('emp_id');
 programSelect.addEventListener('change', function() {
     // Set hidden program_id (string) for backend compatibility

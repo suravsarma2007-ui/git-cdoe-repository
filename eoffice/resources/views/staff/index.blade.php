@@ -17,6 +17,38 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Filter Staff</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ route('staff.index') }}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Name or EMP ID</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Enter name or EMP ID">
+            </div>
+            <div class="col-md-3">
+                <label for="designation" class="form-label">Designation</label>
+                <input type="text" class="form-control" id="designation" name="designation" value="{{ request('designation') }}" placeholder="Designation">
+            </div>
+            <div class="col-md-3">
+                <label for="staff_type" class="form-label">Staff Type</label>
+                <select class="form-select" id="staff_type" name="staff_type">
+                    <option value="">-- All Types --</option>
+                    <option value="Faculty" {{ request('staff_type') == 'Faculty' ? 'selected' : '' }}>Faculty</option>
+                    <option value="Non-Teaching" {{ request('staff_type') == 'Non-Teaching' ? 'selected' : '' }}>Non-Teaching</option>
+                    <option value="Support" {{ request('staff_type') == 'Support' ? 'selected' : '' }}>Support</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                @if(request('search') || request('designation') || request('staff_type'))
+                    <a href="{{ route('staff.index') }}" class="btn btn-secondary w-100">Reset</a>
+                @endif
+            </div>
+        </form>
+    </div>
+</div>
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h5 class="mb-0">Staff Records</h5>
@@ -73,12 +105,31 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
-            @if ($staff->hasPages())
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $staff->links() }}
+            <!-- Customized Simple Pagination -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+                <div class="mb-2 mb-md-0 text-muted small">
+                    Showing {{ $staff->firstItem() ?? 0 }} to {{ $staff->lastItem() ?? 0 }} of {{ $staff->total() }} records
                 </div>
-            @endif
+                <div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            {{-- Previous Page Link --}}
+                            @if ($staff->onFirstPage())
+                                <li class="page-item disabled"><span class="page-link">&laquo; Previous</span></li>
+                            @else
+                                <li class="page-item"><a class="page-link" href="{{ $staff->previousPageUrl() }}" rel="prev">&laquo; Previous</a></li>
+                            @endif
+
+                            {{-- Next Page Link --}}
+                            @if ($staff->hasMorePages())
+                                <li class="page-item"><a class="page-link" href="{{ $staff->nextPageUrl() }}" rel="next">Next &raquo;</a></li>
+                            @else
+                                <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
+            </div>
         @else
             <div class="alert alert-info text-center py-5">
                 <h5>No Staff Records Yet</h5>

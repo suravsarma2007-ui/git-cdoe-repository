@@ -5,30 +5,28 @@
     <form method="POST" action="{{ route('ppt.store') }}" enctype="multipart/form-data">
         @csrf
         <div class="mb-3">
-            <label for="program_select" class="form-label">Program</label>
-            <select id="program_select" name="program_id" class="form-select mb-2" required>
-                <option value="">-- Select Program (optional) --</option>
+            <label for="program_select" class="form-label">Program <span class="text-danger">*</span></label>
+            <select id="program_select" name="program_id" class="form-select mb-2 @error('program_id') is-invalid @enderror" required>
+                <option value="">-- Select Program --</option>
                 @foreach($programs as $prog)
-                    <option value="{{ $prog->id }}">{{ $prog->program_name }} ({{ $prog->program_id }})</option>
+                    <option value="{{ $prog->id }}" {{ old('program_id') == $prog->id ? 'selected' : '' }}>{{ $prog->program_name }} ({{ $prog->program_id }})</option>
                 @endforeach
             </select>
+            @error('program_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
 
             <label for="paper_id" class="form-label">Paper <span class="text-danger">*</span></label>
-            <select name="paper_id" id="paper_id" class="form-select" required>
+            <select name="paper_id" id="paper_id" class="form-select @error('paper_id') is-invalid @enderror" required>
                 <option value="">-- Select Paper --</option>
-                @foreach($papers as $p)
-                    <option value="{{ $p->id }}" data-program="{{ $p->program->id ?? '' }}">
-                        {{ $p->paper_name }} ({{ $p->codes }}) - {{ $p->program->program_name ?? '' }}
-                    </option>
-                @endforeach
+                {{-- Options will be loaded by JS --}}
             </select>
+            @error('paper_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="mb-3">
             <label for="emp_id" class="form-label">Faculty Name</label>
             <select id="emp_id" name="emp_id" class="form-select" required>
                 <option value="">Select Faculty</option>
                 @foreach($staff as $s)
-                    <option value="{{ $s->id }}">{{ $s->name }} ({{ $s->emp_id }})</option>
+                    <option value="{{ $s->id }}" {{ old('emp_id') == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->emp_id }})</option>
                 @endforeach
             </select>
         </div>
@@ -65,36 +63,59 @@
             <label for="date_of_submit" class="form-label">Date Of Submit</label>
             <input type="date" class="form-control" id="date_of_submit" name="date_of_submit" value="{{ date('Y-m-d') }}" readonly>
         </div>
-        <div class="mb-3">
-            <label for="ppt_file_link" class="form-label">Upload PPT File (optional)</label>
-            <input type="file" class="form-control" id="ppt_file_link" name="ppt_file_link" accept=".ppt,.pptx,.pdf">
-        </div>
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="{{ route('ppt.index') }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
-@push('scripts')
+@section('scripts')
 <script>
     (function(){
         const prog = document.getElementById('program_select');
         const paper = document.getElementById('paper_id');
-        const allOptions = Array.from(paper.options).slice(1); // skip placeholder
-        function filterPapers(val) {
-            paper.innerHTML = '<option value="">-- Select Paper --</option>';
-            allOptions.forEach(opt => {
-                if(!val || opt.getAttribute('data-program') === val) {
-                    paper.appendChild(opt.cloneNode(true));
+        const initialSelected = @json(old('paper_id'));
+        const baseUrl = "{{ url('paper/by-program') }}"; // append /{id} if needed
+
+        async function loadPapers(programId){
+            try {
+                const url = programId ? `${baseUrl}/${programId}` : baseUrl;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if(!res.ok) return;
+                const data = await res.json();
+
+                // rebuild options
+                paper.innerHTML = '<option value="">-- Select Paper --</option>';
+                data.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.paper_name} (${p.codes})`;
+                    paper.appendChild(opt);
+                });
+
+                // restore previous selection if present
+                if(initialSelected) {
+                    paper.value = initialSelected;
                 }
-            });
+            } catch (e) {
+                paper.innerHTML = '<option value="">Error loading papers</option>';
+            }
         }
-        prog.addEventListener('change', function(){
-            filterPapers(this.value);
-        });
-        // On page load, filter by selected program (if any)
-        document.addEventListener('DOMContentLoaded', function(){
-            filterPapers(prog.value);
-        });
+
+        prog.addEventListener('change', function(){ loadPapers(this.value); });
+        document.addEventListener('DOMContentLoaded', function(){ loadPapers(prog.value); });
+
+        // Auto-update Total field (No of PPT + Screen Recording)
+        const noOfPpt = document.getElementById('no_of_ppt');
+        const screenRecording = document.getElementById('screen_recording');
+        const total = document.getElementById('total');
+        function updateTotal() {
+            const n = parseInt(noOfPpt.value) || 0;
+            const s = parseInt(screenRecording.value) || 0;
+            total.value = n + s;
+        }
+        noOfPpt.addEventListener('input', updateTotal);
+        screenRecording.addEventListener('input', updateTotal);
+        document.addEventListener('DOMContentLoaded', updateTotal);
     })();
 </script>
-@endpush
+@endsection
 @endsection

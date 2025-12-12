@@ -148,9 +148,30 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center mt-3">
-                {{ $videos->links() }}
+            <!-- Customized Simple Pagination -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+                <div class="mb-2 mb-md-0 text-muted small">
+                    Showing {{ $videos->firstItem() ?? 0 }} to {{ $videos->lastItem() ?? 0 }} of {{ $videos->total() }} records
+                </div>
+                <div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            {{-- Previous Page Link --}}
+                            @if ($videos->onFirstPage())
+                                <li class="page-item disabled"><span class="page-link">&laquo; Previous</span></li>
+                            @else
+                                <li class="page-item"><a class="page-link" href="{{ $videos->previousPageUrl() }}" rel="prev">&laquo; Previous</a></li>
+                            @endif
+
+                            {{-- Next Page Link --}}
+                            @if ($videos->hasMorePages())
+                                <li class="page-item"><a class="page-link" href="{{ $videos->nextPageUrl() }}" rel="next">Next &raquo;</a></li>
+                            @else
+                                <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>

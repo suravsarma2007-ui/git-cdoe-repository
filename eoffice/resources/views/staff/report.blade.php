@@ -75,7 +75,7 @@
         <h5 class="mb-0">Staff Records (Total: {{ count($staff) }})</h5>
     </div>
     <div class="card-body">
-        @if (count($staff) > 0)
+        @if ($staff->count() > 0)
             <div class="table-responsive">
                 <table class="table table-bordered table-striped">
                     <thead class="table-dark">
@@ -97,7 +97,7 @@
                     <tbody>
                         @forelse ($staff as $index => $member)
                             <tr>
-                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $staff->firstItem() + $index }}</td>
                                 <td><strong>{{ $member->emp_id }}</strong></td>
                                 <td>{{ $member->name }}</td>
                                 <td>{{ $member->designation }}</td>
@@ -121,13 +121,39 @@
                 </table>
             </div>
 
+            <!-- Customized Simple Pagination -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4">
+                <div class="mb-2 mb-md-0 text-muted small">
+                    Showing {{ $staff->firstItem() ?? 0 }} to {{ $staff->lastItem() ?? 0 }} of {{ $staff->total() }} records
+                </div>
+                <div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            {{-- Previous Page Link --}}
+                            @if ($staff->onFirstPage())
+                                <li class="page-item disabled"><span class="page-link">&laquo; Previous</span></li>
+                            @else
+                                <li class="page-item"><a class="page-link" href="{{ $staff->previousPageUrl() }}" rel="prev">&laquo; Previous</a></li>
+                            @endif
+
+                            {{-- Next Page Link --}}
+                            @if ($staff->hasMorePages())
+                                <li class="page-item"><a class="page-link" href="{{ $staff->nextPageUrl() }}" rel="next">Next &raquo;</a></li>
+                            @else
+                                <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+           
             <!-- Report Summary -->
             <div class="row mt-4 pt-3 border-top no-print">
                 <div class="col-md-3">
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">Total Staff</h5>
-                            <h3>{{ count($staff) }}</h3>
+                            <h3>{{ $totalStaffCount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -135,7 +161,7 @@
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">Faculty</h5>
-                            <h3>{{ $staff->where('staff_type', 'Faculty')->count() }}</h3>
+                            <h3>{{ $facultyCount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -143,7 +169,7 @@
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">Non-Teaching</h5>
-                            <h3>{{ $staff->where('staff_type', 'Non-Teaching')->count() }}</h3>
+                            <h3>{{ $nonTeachingCount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -151,7 +177,7 @@
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">Support Staff</h5>
-                            <h3>{{ $staff->where('staff_type', 'Support')->count() }}</h3>
+                            <h3>{{ $supportCount }}</h3>
                         </div>
                     </div>
                 </div>

@@ -12,7 +12,7 @@ class Ppt extends Model
     protected $table = 'ppt';
 
     protected $fillable = [
-        'paper',
+        'paper_id',
         'emp_id',
         'program_id',
         'module_no',
@@ -28,12 +28,12 @@ class Ppt extends Model
     // Relationships
     public function program()
     {
-        return $this->belongsTo(Program::class, 'program_id', 'program_id');
+        return $this->belongsTo(Program::class, 'program_id', 'id');
     }
 
     public function paper()
     {
-        return $this->belongsTo(Paper::class, 'paper', 'paper_name');
+        return $this->belongsTo(Paper::class, 'paper_id', 'id');
     }
 
     public function staff()
