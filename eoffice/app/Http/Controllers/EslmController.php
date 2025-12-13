@@ -18,16 +18,16 @@ class EslmController extends Controller
         // Filtering
         $query = Eslm::query()->with(['program', 'paper', 'staff']);
         if ($request->filled('program_id')) {
-            $query->where('program_id', $request->program_id);
+            $query->where('id', $request->program_id);
         }
         if ($request->filled('codes')) {
-            $query->where('codes', $request->codes);
+            $query->where('id', $request->codes);
         }
         if ($request->filled('module_no')) {
             $query->where('module_no', $request->module_no);
         }
         if ($request->filled('emp_id')) {
-            $query->where('emp_id', $request->emp_id);
+            $query->where('id', $request->emp_id);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -46,111 +46,127 @@ class EslmController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'program_id' => 'required|exists:programs,id',
-            'codes' => 'required|exists:papers,id',
-            'paper_code' => 'required|exists:papers,codes',
-            'emp_id' => 'required|exists:staff,emp_id',
-            'module_no' => 'required|integer|min:1|max:20',
-            'status' => 'nullable|string|max:50',
-            'remark' => 'nullable|string',
-            'block' => 'nullable|string|max:100',
-            'program_is' => 'nullable|integer|exists:programs,id',
-            'paper_id' => 'nullable|integer|exists:papers,id',
-        ]);
-        $validated['date_of_submit'] = now()->toDateString();
-            // Store the selected program id directly
-            // (no need to resolve program_id string, just use id)
-        $validated['paper_id'] = $request->input('codes');
-        $validated['paper_code'] = $request->input('paper_code');
-        unset($validated['codes']);
-        // Store program_is and paper_id (actual ids from tables)
-        $program = \App\Models\Program::find($validated['program_id']);
-        $paper = \App\Models\Paper::where('codes', $validated['paper_code'])->first();
-        $validated['program_is'] = $program ? $program->id : null;
-        $validated['paper_id'] = $paper ? $paper->id : null;
-        // Handle file upload
-        if ($request->hasFile('file_upload_link')) {
-            // Get related info for folder structure
-            $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
-            $semester = $paper ? $paper->semester : 'unknown_semester';
-            $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
-            $moduleNo = $validated['module_no'] ?? 'module';
-            $folder = "$programName/$semester/$paperName/Module$moduleNo";
-            // Ensure each folder exists
-            $segments = explode('/', $folder);
-            $path = '';
-            foreach ($segments as $segment) {
-                $path = ltrim($path . '/' . $segment, '/');
-                if (!Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->makeDirectory($path);
-                }
+{
+    $validated = $request->validate([
+        'program_id' => 'required|exists:programs,id',
+        'paper_id'   => 'required|exists:papers,id',
+        'emp_id'     => 'required|exists:staff,emp_id',
+        'module_no'  => 'required|integer|min:1|max:20',
+        'status'     => 'nullable|string|max:50',
+        'remark'     => 'nullable|string',
+        'block'      => 'nullable|string|max:100',
+    ]);
+
+    $validated['date_of_submit'] = now()->toDateString();
+
+    // Handle file upload
+    if ($request->hasFile('file_upload_link')) {
+
+        // Get program & paper using IDs directly
+        $program = Program::find($validated['program_id']);
+        $paper   = Paper::find($validated['paper_id']);
+
+        // Sanitize names for folder/file
+        $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
+        $semester    = $paper ? $paper->semester : 'unknown_semester';
+        $paperName   = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
+
+        $moduleNo = $validated['module_no'];
+
+        // Folder structure uses paper_id → paper details
+        $folder = "$programName/$semester/$paperName/Module$moduleNo";
+
+        // Create directories recursively
+        $segments = explode('/', $folder);
+        $path = '';
+        foreach ($segments as $segment) {
+            $path = ltrim($path . '/' . $segment, '/');
+            if (!Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->makeDirectory($path);
             }
-            // Use paper name as file name, preserve extension
-            $ext = $request->file('file_upload_link')->getClientOriginalExtension();
-            $fileName = $paperName . '.' . $ext;
-            $validated['file_upload_link'] = $request->file('file_upload_link')->storeAs($folder, $fileName, 'public');
         }
-        Eslm::create($validated);
-        return redirect()->route('eslm.index')->with('success', 'Record added successfully.');
+
+        // Save file with paper name
+        $ext = $request->file('file_upload_link')->getClientOriginalExtension();
+        $fileName = $paperName . '.' . $ext;
+
+        $validated['file_upload_link'] =
+            $request->file('file_upload_link')->storeAs($folder, $fileName, 'public');
     }
+
+        // Save directly with paper_id
+        $validated['paper_code'] = $validated['paper_id']; // Ensure paper_code is set to paper_id
+        unset($validated['paper_id']); // Remove paper_id from validated data
+        Eslm::create($validated); // Create the record
+
+    return redirect()->route('eslm.index')->with('success', 'Record added successfully.');
+}
+
 
     public function edit(Eslm $eslm)
     {
         $programs = Program::all();
-        return view('eslm.edit', compact('eslm', 'programs'));
+        $papers = Paper::all();
+        return view('eslm.edit', compact('eslm', 'programs', 'papers'));
     }
 
     public function update(Request $request, Eslm $eslm)
-    {
-        $validated = $request->validate([
-            'program_id' => 'required|exists:programs,id',
-            'codes' => 'required|exists:papers,id',
-            'paper_code' => 'required|exists:papers,codes',
-            'emp_id' => 'required|exists:staff,emp_id',
-            'module_no' => 'required|integer|min:1|max:20',
-            'status' => 'nullable|string|max:50',
-            'remark' => 'nullable|string',
-            'block' => 'nullable|string|max:100',
-            'program_is' => 'nullable|integer|exists:programs,id',
-            'paper_id' => 'nullable|integer|exists:papers,id',
-        ]);
-        // Ensure program_id and paper_code are set for DB
-            // Store the selected program id directly
-        $validated['paper_id'] = $request->input('codes');
-        $validated['paper_code'] = $request->input('paper_code');
-        unset($validated['codes']);
-        // Store program_is and paper_id (actual ids from tables)
-        $program = \App\Models\Program::find($validated['program_id']);
-        $paper = \App\Models\Paper::where('codes', $validated['paper_code'])->first();
-        $validated['program_is'] = $program ? $program->id : null;
-        $validated['paper_id'] = $paper ? $paper->id : null;
-        // Handle file upload
-        if ($request->hasFile('file_upload_link')) {
-            // Get related info for folder structure
-            $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
-            $semester = $paper ? $paper->semester : 'unknown_semester';
-            $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
-            $moduleNo = $validated['module_no'] ?? 'module';
-            $folder = "$programName/$semester/$paperName/Module$moduleNo";
-            // Ensure each folder exists
-            $segments = explode('/', $folder);
-            $path = '';
-            foreach ($segments as $segment) {
-                $path = ltrim($path . '/' . $segment, '/');
-                if (!Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->makeDirectory($path);
-                }
+{
+    $validated = $request->validate([
+        'program_id' => 'required|exists:programs,program_id',
+        'codes' => 'required|exists:papers,codes',   // paper selected
+        'emp_id' => 'required|exists:staff,emp_id',
+        'module_no' => 'required|integer|min:1|max:20',
+        'status' => 'nullable|string|max:50',
+        'remark' => 'nullable|string',
+        'block' => 'nullable|string|max:100',
+    ]);
+
+    // ----------------------------
+    // FIX: Correctly store paper_code
+    // ----------------------------
+    $validated['paper_code'] = $validated['codes']; // save selected paper code
+    unset($validated['codes']); // remove 'codes' after mapping
+
+    // ----------------------------
+    // FILE UPLOAD LOGIC
+    // ----------------------------
+    if ($request->hasFile('file_upload_link')) {
+
+        $program = Program::where('program_id', $validated['program_id'])->first();
+        $paper = Paper::where('codes', $validated['paper_code'])->first();
+
+        $programName = $program ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $program->program_name) : 'unknown_program';
+        $semester = $paper ? $paper->semester : 'unknown_semester';
+        $paperName = $paper ? preg_replace('/[^A-Za-z0-9_\-]/', '_', $paper->paper_name) : 'unknown_paper';
+        $moduleNo = $validated['module_no'] ?? 'module';
+
+        $folder = "$programName/$semester/$paperName/Module$moduleNo";
+
+        // ensure folder structure
+        $segments = explode('/', $folder);
+        $path = '';
+        foreach ($segments as $segment) {
+            $path = ltrim($path . '/' . $segment, '/');
+            if (!Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->makeDirectory($path);
             }
-            // Use paper name as file name, preserve extension
-            $ext = $request->file('file_upload_link')->getClientOriginalExtension();
-            $fileName = $paperName . '.' . $ext;
-            $validated['file_upload_link'] = $request->file('file_upload_link')->storeAs($folder, $fileName, 'public');
         }
-        $eslm->update($validated);
-        return redirect()->route('eslm.index')->with('success', 'Record updated successfully.');
+
+        // file name based on paper name
+        $ext = $request->file('file_upload_link')->getClientOriginalExtension();
+        $fileName = $paperName . '.' . $ext;
+
+        $validated['file_upload_link'] =
+            $request->file('file_upload_link')->storeAs($folder, $fileName, 'public');
     }
+
+    // update record
+    $eslm->update($validated);
+
+    return redirect()->route('eslm.index')->with('success', 'Record updated successfully.');
+}
+
 
     public function destroy(Eslm $eslm)
     {
@@ -161,7 +177,28 @@ class EslmController extends Controller
     public function report(Request $request)
     {
         // Same as index, but for report view
-        return $this->index($request);
+        // Ensure paper_id is available in report filters and views
+        $query = Eslm::query()->with(['program', 'paper', 'staff']);
+        if ($request->filled('program_id')) {
+            $query->where('program_id', $request->program_id);
+        }
+        if ($request->filled('paper_id')) {
+            $query->where('paper_code', $request->paper_id);
+        }
+        if ($request->filled('module_no')) {
+            $query->where('module_no', $request->module_no);
+        }
+        if ($request->filled('emp_id')) {
+            $query->where('emp_id', $request->emp_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        $eslms = $query->paginate(15);
+        $programs = Program::all();
+        $papers = Paper::all();
+        $staff = Staff::all();
+        return view('eslm.report', compact('eslms', 'programs', 'papers', 'staff'));
     }
 
     public function exportCsv(Request $request)
@@ -224,7 +261,7 @@ class EslmController extends Controller
             $data = array_combine($header, $row);
             Eslm::create([
                 'program_id' => $data['Program ID'],
-                'codes' => $data['Paper Code'],
+                'paper_code' => $data['Paper ID'], // Store paper_id in paper_code
                 'emp_id' => $data['emp_id'],
                 'module_no' => $data['ModuleNo'],
                 'status' => $data['Status'] ?? null,

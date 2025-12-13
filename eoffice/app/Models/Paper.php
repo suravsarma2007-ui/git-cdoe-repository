@@ -34,4 +34,10 @@ class Paper extends Model
     {
         return $this->belongsTo(Program::class, 'program_id', 'id');
     }
+
+    public static function getNameById($id)
+    {
+        $papers = self::find($id);
+        return $papers ? $papers->paper_name : null;
+    }
 }

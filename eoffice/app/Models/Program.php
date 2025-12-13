@@ -19,4 +19,16 @@ class Program extends Model
     ];
 
     protected $dates = ['deleted_at'];
+
+
+      /**
+     * Get the program name by id.
+     * @param int $id
+     * @return string|null
+     */
+    public static function getNameById($id)
+    {
+        $program = self::find($id);
+        return $program ? $program->program_name : null;
+    }
 }

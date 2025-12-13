@@ -1,97 +1,85 @@
 @extends('layouts.app')
+@section('title', 'Add ESLM Record')
 @section('content')
 <div class="container">
     <h2>Add ESLM Record</h2>
     <form method="POST" action="{{ route('eslm.store') }}" enctype="multipart/form-data">
-                <!-- File upload moved to bottom and is optional -->
         @csrf
         <div class="mb-3">
-            <label for="program_db_id" class="form-label">Program Name</label>
-            <select id="program_db_id" name="program_db_id" class="form-select" required>
-                <option value="">Select Program</option>
-                @foreach($programs as $program)
-                    <option value="{{ $program->id }}" data-program_id="{{ $program->program_id }}">{{ $program->program_name }}</option>
+            <label for="program_select" class="form-label">Program Name</label>
+            <select id="program_select" name="program_id" class="form-select mb-2" required>
+                <option value="">-- Select Program --</option>
+                @foreach($programs as $prog)
+                    <option value="{{ $prog->id }}">{{ $prog->program_name }} ({{ $prog->program_id }})</option>
                 @endforeach
             </select>
-            <input type="hidden" id="program_id" name="program_id">
         </div>
         <div class="mb-3">
-            <label for="codes" class="form-label">Paper Name</label>
-            <select id="codes" name="codes" class="form-select" required>
-                <option value="">Select Paper</option>
+            <label for="paper_id" class="form-label">Paper Name</label>
+            <select name="paper_id" id="paper_id" class="form-select" required>
+                <option value="">-- Select Paper --</option>
             </select>
-            <input type="hidden" id="paper_code" name="paper_code">
         </div>
-                <div class="mb-3">
-                    <label for="module_no" class="form-label">Module No</label>
-                    <input type="number" class="form-control" id="module_no" name="module_no" min="1" max="20" required>
-                </div>
         <div class="mb-3">
             <label for="emp_id" class="form-label">Faculty Name</label>
-            <select id="emp_id" name="emp_id" class="form-select" required>
-                <option value="">Select Faculty</option>
+            <select name="emp_id" id="emp_id" class="form-select" required>
+                <option value="">-- Select Faculty --</option>
+                @foreach(App\Models\Staff::where('staff_type', 'Faculty')->get() as $s)
+                    <option value="{{ $s->emp_id }}">{{ $s->name }} ({{ $s->emp_id }})</option>
+                @endforeach
             </select>
         </div>
-
+        <div class="mb-3">
+            <label for="module_no" class="form-label">Module No</label>
+            <select name="module_no" id="module_no" class="form-select" required>
+                <option value="">-- Select Module --</option>
+                @for($i=1;$i<=12;$i++)
+                    <option value="{{ $i }}">Module {{ $i }}</option>
+                @endfor
+            </select>
+        </div>
         <div class="mb-3">
             <label for="status" class="form-label">Status</label>
-            <select class="form-select" id="status" name="status" required>
-                <option value="">Select Status</option>
+            <select name="status" id="status" class="form-select" required>
+                <option value="">-- Select Status --</option>
                 <option value="Pending">Pending</option>
                 <option value="Done">Done</option>
-                <option value="Done and Uploaded">Done and Uploaded</option>
+                <option value="Done & Uploaded">Done & Uploaded</option>
             </select>
         </div>
         <div class="mb-3">
             <label for="remark" class="form-label">Remark</label>
-            <textarea class="form-control" id="remark" name="remark"></textarea>
+            <textarea name="remark" id="remark" class="form-control"></textarea>
         </div>
         <div class="mb-3">
             <label for="block" class="form-label">Block</label>
-            <input type="text" class="form-control" id="block" name="block" maxlength="100" value="0">
-        </div>
-        <div class="mb-3">
-            <label for="file_upload_link" class="form-label">Upload File (optional)</label>
-            <input type="file" class="form-control" id="file_upload_link" name="file_upload_link" accept=".pdf,.doc,.docx,.zip">
+            <input type="text" name="block" id="block" class="form-control">
         </div>
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="{{ route('eslm.index') }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+@section('scripts')
 <script>
-// Dynamic Paper and Faculty dropdowns
-const programSelect = document.getElementById('program_db_id');
-const paperSelect = document.getElementById('codes');
-const facultySelect = document.getElementById('emp_id');
-programSelect.addEventListener('change', function() {
-    // Set hidden program_id (string) for backend compatibility
-    const selected = this.options[this.selectedIndex];
-    document.getElementById('program_id').value = selected.getAttribute('data-program_id');
-    fetch(`/paper/by-program/${this.value}`)
-        .then(res => res.json())
-        .then(data => {
-            paperSelect.innerHTML = '<option value="">Select Paper</option>';
-            data.forEach(paper => {
-                paperSelect.innerHTML += `<option value="${paper.id}" data-paper_code="${paper.codes}">${paper.paper_name}</option>`;
+    (function(){
+        const prog = document.getElementById('program_select');
+        const paper = document.getElementById('paper_id');
+        async function loadPapers(programId){
+            if(!programId) { paper.innerHTML = '<option value="">-- Select Paper --</option>'; return; }
+            const res = await fetch(`/paper/by-program/${programId}`);
+            if(!res.ok) return;
+            const data = await res.json();
+            paper.innerHTML = '<option value="">-- Select Paper --</option>';
+            data.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.paper_name} (${p.id})`;
+                paper.appendChild(opt);
             });
-        });
-});
-// Load only faculty (staff_type=Faculty)
-window.addEventListener('DOMContentLoaded', function() {
-    fetch('/staff/faculty-only')
-        .then(res => res.json())
-        .then(data => {
-            facultySelect.innerHTML = '<option value="">Select Faculty</option>';
-            data.forEach(staff => {
-                facultySelect.innerHTML += `<option value="${staff.emp_id}">${staff.name}</option>`;
-            });
-        });
-});
-// Set hidden paper_code when paper changes
-paperSelect.addEventListener('change', function() {
-    const selected = this.options[this.selectedIndex];
-    document.getElementById('paper_code').value = selected.getAttribute('data-paper_code');
-});
-// No file upload fields for modules
+        }
+        prog.addEventListener('change', function(){ loadPapers(this.value); });
+        document.addEventListener('DOMContentLoaded', function(){ loadPapers(prog.value); });
+    })();
 </script>
+@endsection
 @endsection

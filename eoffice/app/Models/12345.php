@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Eslm extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'program_id',
         'paper_code',
@@ -16,25 +19,21 @@ class Eslm extends Model
         'file_upload_link',
         'remark',
         'block',
-        'created_at',
-        'updated_at',
     ];
 
-    // ESLM belongs to Program (by program_id)
+    // Relationships
     public function program()
     {
-        return $this->belongsTo(Program::class, 'program_id', 'id');
+        return $this->belongsTo(Program::class, 'program_id', 'program_id');
     }
 
-    // ESLM belongs to Paper (by paper_code to id)
     public function paper()
     {
-        return $this->belongsTo(Paper::class, 'paper_code', 'id');
+        return $this->belongsTo(Paper::class, 'paper_code', 'codes');
     }
 
-    // ESLM belongs to Staff (by emp_id)
     public function staff()
     {
-        return $this->belongsTo(Staff::class, 'emp_id', 'id');
+        return $this->belongsTo(Staff::class, 'emp_id', 'emp_id');
     }
 }

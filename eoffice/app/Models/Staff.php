@@ -30,4 +30,10 @@ class Staff extends Model
     ];
 
     protected $dates = ['deleted_at'];
+
+      public static function getNameById($id)
+    {
+        $staff = self::find($id);
+        return $staff ? $staff->name : null;
+    }
 }
