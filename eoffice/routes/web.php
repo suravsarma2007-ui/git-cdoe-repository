@@ -12,6 +12,8 @@ use App\Http\Controllers\AcademicSessionController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\VideoRecordingScheduleController;
 use App\Http\Controllers\TargetController;
+use App\Http\Controllers\DailyRecordVideoController;
+
 
 // Guest routes (unauthenticated users)
 Route::middleware('guest')->group(function () {
@@ -168,9 +170,25 @@ Route::middleware('auth')->group(function () {
             Route::get('/export/csv', [\App\Http\Controllers\EslmController::class, 'exportCsv'])->name('export-csv');
             Route::post('/import/csv', [\App\Http\Controllers\EslmController::class, 'importCsv'])->name('import-csv');
         });
+
+        //Eslm Daily Record Video Routes
+        Route::prefix('daily-record-video')->name('daily_record_video.')->group(function () {
+
+            Route::get('/', [DailyRecordVideoController::class, 'index'])->name('index');
+            Route::get('/create', [DailyRecordVideoController::class, 'create'])->name('create');
+            Route::post('/', [DailyRecordVideoController::class, 'store'])->name('store');
+            Route::put('/update/{id}', [DailyRecordVideoController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [DailyRecordVideoController::class, 'destroy'])->name('delete');             
+            Route::get('/edit/{id}', [DailyRecordVideoController::class, 'edit'])->name('edit');
+            Route::put('/update/{id}', [DailyRecordVideoController::class, 'update'])->name('update');
+            
+        });
 });
+
 
 // Default redirect
 Route::get('/home', function () {
     return redirect('/');
 });
+Route::get('/get-papers/{program_id}', [PaperController::class, 'getPapers']);
+Route::get('/get-faculty-papers/{paper_id}', [PaperController::class, 'getFaculty']);

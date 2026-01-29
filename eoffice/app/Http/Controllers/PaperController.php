@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Paper;
+use App\Models\PaperAllocationView;
 use App\Models\Program;
 use Illuminate\Http\Request;
 
@@ -289,4 +290,41 @@ class PaperController extends Controller
 
         return response()->json($result);
     }
+
+    
+    // Program related to COmbo box
+    public function getPapers($program_id)
+            {
+             
+            $paper = Paper::select('id', 'paper_name')
+                ->where('program_id', $program_id)
+                ->distinct()
+                ->orderBy('paper_name')
+                ->get();
+
+            return response()->json($paper);
+        }     
+        
+       
+        public function getFaculty($paper_id)
+            {
+            $program_id=$this->getProgramID($paper_id);
+            $faculty = PaperAllocationView::select('emp_id', 'faculty_name')
+                ->where('program_id', $program_id)
+                ->distinct()
+                ->orderBy('faculty_name')
+                ->get();
+
+            return response()->json($faculty);
+        }     
+    
+
+        public function getProgramID($paper_id)
+            {
+             
+             $program_id = PaperAllocationView::where('paper_id', $paper_id)
+             ->value('program_id');   // ✅ returns single value
+
+            return $program_id;
+            }
 }
